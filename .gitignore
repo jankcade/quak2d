@@ -1,0 +1,8 @@
+
+# CodicAI harness internal state — run logs, its own sqlite db, generated
+# config — none of it is project source and it changes on every run.
+.codicai/
+
+# Dependencies the harness installs to run this project's tests
+# (bootstrapTestTooling). Never project source, and enormous.
+node_modules/
