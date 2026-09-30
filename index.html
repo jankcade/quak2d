@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="description" content="QUAKE-2D — a browser FPS. No assets, no build, no network: every texture, sprite and sound is generated at load time.">
+<title>QUAKE-2D — Descent into the Silver Forge</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%; width: 100%;
+    background: #05060a; color: #cfd8e6; overflow: hidden;
+    font-family: "Courier New", Courier, monospace;
+  }
+  #view {
+    display: block; width: 100vw; height: 100vh;
+    cursor: none; image-rendering: pixelated;
+    background: #05060a; touch-action: none;
+  }
+  #loading {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+    background: #05060a; z-index: 20; letter-spacing: 3px;
+  }
+  #loading b { font-size: 30px; color: #ff8a3a; letter-spacing: 8px; }
+  #loading span { font-size: 12px; color: #6d7f96; }
+  #bar { width: 260px; height: 6px; background: #12161f; border: 1px solid #2b3444; }
+  #bar i { display: block; height: 100%; width: 0%; background: #ff8a3a; transition: width .15s; }
+  #fatal {
+    display: none; position: fixed; left: 8%; right: 8%; top: 20%; z-index: 30;
+    background: #1a0a0a; border: 1px solid #a03; color: #ffb0a0;
+    padding: 18px; font-size: 13px; white-space: pre-wrap;
+  }
+  #noscript { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+
+<canvas id="view" width="960" height="540" aria-label="Game viewport"></canvas>
+
+<div id="loading">
+  <b>QUAKE-2D</b>
+  <span id="status">GENERATING TEXTURES</span>
+  <div id="bar"><i id="fill"></i></div>
+  <span>CLICK TO CAPTURE THE MOUSE &nbsp;·&nbsp; ESC TO RELEASE</span>
+</div>
+
+<div id="fatal"></div>
+<noscript><div id="noscript">This game needs JavaScript and a canvas.</div></noscript>
+
+<!-- classic scripts, in dependency order: works straight from file:// -->
+<script src="js/util.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/textures.js"></script>
+<script src="js/art.js"></script>
+<script src="js/map.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/weapons.js"></script>
+<script src="js/player.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/game.js"></script>
+
+<script>
+/* Boot in visible steps so the loading bar paints between the heavy
+ * procedural-asset passes instead of showing a blank page. */
+(function () {
+  'use strict';
+  var statusEl = document.getElementById('status');
+  var fillEl = document.getElementById('fill');
+  var loadEl = document.getElementById('loading');
+
+  function step(pct, label, fn) {
+    return new Promise(function (resolve, reject) {
+      statusEl.textContent = label;
+      fillEl.style.width = pct + '%';
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          try { resolve(fn ? fn() : null); }
+          catch (e) { reject(e); }
+        });
+      });
+    });
+  }
+
+  step(12, 'SYNTHESISING AUDIO', null)
+    .then(function () { return step(34, 'GENERATING TEXTURES', function () { Q2.textures.set; }); })
+    .then(function () { return step(62, 'SPLICING MONSTERS', function () { Q2.art; }); })
+    .then(function () { return step(78, 'FORGING LEVEL', function () { Q2.Game.baseSeed = (Math.random() * 1e9) | 0; }); })
+    .then(function () { return step(92, 'COMPILING SHADERS', function () { Q2.Game.boot(); }); })
+    .then(function () {
+      return step(100, 'READY', function () {
+        loadEl.style.display = 'none';
+        var v = document.getElementById('view');
+        if (v) v.focus();
+      });
+    })
+    .catch(function (err) {
+      var el = document.getElementById('fatal');
+      el.style.display = 'block';
+      el.textContent = 'Failed to start: ' + (err && err.stack ? err.stack : err);
+      loadEl.style.display = 'none';
+      throw err;
+    });
+})();
+</script>
+</body>
+</html>
